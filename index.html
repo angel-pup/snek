@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Snake Game</title>
+    <style>
+      canvas {
+        border: 1px solid black;
+        display: block;
+        margin: 0 auto;
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="gameCanvas" width="400" height="400"></canvas>
+    <script>
+      const canvas = document.getElementById("gameCanvas");
+      const ctx = canvas.getContext("2d");
+      const gridSize = 20;
+      const numCells = canvas.width / gridSize;
+      const snake = [{ x: 10, y: 10 }];
+
+      const KEY_LEFT = "ArrowLeft";
+      const KEY_UP = "ArrowUp";
+      const KEY_RIGHT = "ArrowRight";
+      const KEY_DOWN = "ArrowDown";
+      const DIR_LEFT = { x: -1, y: 0 };
+      const DIR_UP = { x: 0, y: -1 };
+      const DIR_RIGHT = { x: 1, y: 0 };
+      const DIR_DOWN = { x: 0, y: 1 };
+      
+      let keyBuffer = [];
+
+      let food = { x: 15, y: 10 };
+      let direction = { x: 1, y: 0 };
+      let gameLoop;
+
+
+      function drawCell(x, y, color) {
+        ctx.fillStyle = color;
+        ctx.fillRect(x * gridSize, y * gridSize, gridSize, gridSize);
+      }
+
+      function drawSnake() {
+        snake.forEach((segment) => drawCell(segment.x, segment.y, "green"));
+      }
+
+      function drawFood() {
+        drawCell(food.x, food.y, "red");
+      }
+
+      function moveSnake() {
+        const head = {
+          x: snake[0].x + direction.x,
+          y: snake[0].y + direction.y,
+        };
+        snake.unshift(head);
+
+        if (head.x === food.x && head.y === food.y) {
+          generateFood();
+        } else {
+          snake.pop();
+        }
+      }
+
+      function generateFood() {
+        food = {
+          x: Math.floor(Math.random() * numCells),
+          y: Math.floor(Math.random() * numCells)
+        };
+
+        // if 
+      }
+
+      function checkCollision() {
+        const head = snake[0];
+        if (
+          head.x < 0 ||
+          head.x >= numCells ||
+          head.y < 0 ||
+          head.y >= numCells
+        ) {
+          clearInterval(gameLoop);
+          alert("Game Over!");
+        }
+      }
+
+      function update() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        drawFood();
+        drawSnake();
+        checkCollision();
+        changeDirection();
+        moveSnake();
+      }
+
+      function changeDirection() {
+        if (keyBuffer.length > 0) {
+
+          let newDirection;
+          keyBuffer.length > 1 ? newDirection = keyBuffer.shift() : newDirection = keyBuffer[0];
+
+          switch (newDirection) {
+            case KEY_LEFT:
+              if (direction.x !== 1) {
+                direction = DIR_LEFT;
+              }
+              break;
+            case KEY_UP:
+              if (direction.y !== 1) {
+                direction = DIR_UP;
+              }
+              break;
+            case KEY_RIGHT:
+              if (direction.x !== -1) {
+                direction = DIR_RIGHT;
+              }
+              break;
+            case KEY_DOWN:
+              if (direction.y !== -1) {
+                direction = DIR_DOWN;
+              }
+              break;
+            default:
+            // do nothing;
+          }
+        }
+      }
+
+      async function addKeypressToBuffer(event) { 
+        event.preventDefault();
+        const key = event.key;
+        keyBuffer.push(key);
+      }
+
+      async function removeKeypressFromBuffer(event) {
+        event.preventDefault();
+        if (keyBuffer.length > 1) {
+          const removeKey = event.key;
+          keyBuffer = keyBuffer.filter(key => key !== removeKey);
+        }
+      }
+
+      document.addEventListener("keydown", addKeypressToBuffer);
+      document.addEventListener("keyup", removeKeypressFromBuffer);
+
+      generateFood();
+      gameLoop = setInterval(update, 150); // Game loop
+    </script>
+  </body>
+</html>
