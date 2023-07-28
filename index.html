@@ -12,12 +12,28 @@
   </head>
   <body>
     <canvas id="gameCanvas" width="400" height="400"></canvas>
+    <div style="text-align: center">
+      <button id="start" style="display: inline-block; margin:1.5em; height: 50px; width: 100px">Start Game!</button>
+    </div>
     <script>
+
+      // TODO: Keep Track of Tail / self-collision detection
+      // TODO: Spawn food outside of current body
+
       const canvas = document.getElementById("gameCanvas");
       const ctx = canvas.getContext("2d");
       const gridSize = 20;
       const numCells = canvas.width / gridSize;
-      const snake = [{ x: 10, y: 10 }];
+
+      let snake;
+      let head;
+      let tickRate;
+      let snakeLength;
+
+      const sortedTailPositions = new Set();
+
+      const MIN_TICKRATE = 75;
+      const AMOUNT_MODIFY_TICKRATE = 25;
 
       const KEY_LEFT = "ArrowLeft";
       const KEY_UP = "ArrowUp";
@@ -47,6 +63,18 @@
       function drawFood() {
         drawCell(food.x, food.y, "red");
       }
+      
+      function updateTickRate() {
+        if (tickRate > MIN_TICKRATE) tickRate -= AMOUNT_MODIFY_TICKRATE;
+        clearInterval(gameLoop)
+        gameLoop = setInterval(update, tickRate);
+      }
+
+      function endGame() {
+        clearInterval(gameLoop);
+        alert("Game Over!");
+        startButton.addEventListener('click', start);
+      }
 
       function moveSnake() {
         const head = {
@@ -54,33 +82,48 @@
           y: snake[0].y + direction.y,
         };
         snake.unshift(head);
-
+        
         if (head.x === food.x && head.y === food.y) {
+          snakeGrow(1, head);
           generateFood();
         } else {
           snake.pop();
+          sortedTailPositions.add(`${head}`);
+          sortedTailPositions.removeKey(`${snake[snakeLength]}`);
         }
       }
 
+      function snakeGrow(amountGrow, headPosition) {
+        snakeLength += amountGrow;
+        sortedTailPositions.add(`${headPosition}`);
+      }
+
       function generateFood() {
+        if (snakeLength % 5 === 0) updateTickRate();
+
         food = {
           x: Math.floor(Math.random() * numCells),
           y: Math.floor(Math.random() * numCells)
         };
-
+        
         // if 
       }
 
-      function checkCollision() {
-        const head = snake[0];
+      const startButton = document.getElementById('start');
+
+      function checkTailCollision(newHead) {
+        if (sortedTailPositions.has(`${newHead}`))
+          endGame();
+      }
+
+      function checkWallCollision(head) {
         if (
           head.x < 0 ||
           head.x >= numCells ||
           head.y < 0 ||
           head.y >= numCells
         ) {
-          clearInterval(gameLoop);
-          alert("Game Over!");
+          endGame();
         }
       }
 
@@ -89,7 +132,9 @@
 
         drawFood();
         drawSnake();
-        checkCollision();
+        head = snake[0];
+        checkWallCollision(head);
+        checkTailCollision(head);
         changeDirection();
         moveSnake();
       }
@@ -97,8 +142,7 @@
       function changeDirection() {
         if (keyBuffer.length > 0) {
 
-          let newDirection;
-          keyBuffer.length > 1 ? newDirection = keyBuffer.shift() : newDirection = keyBuffer[0];
+          const newDirection = keyBuffer.shift();
 
           switch (newDirection) {
             case KEY_LEFT:
@@ -130,22 +174,31 @@
       async function addKeypressToBuffer(event) { 
         event.preventDefault();
         const key = event.key;
-        keyBuffer.push(key);
+        //keyBuffer = keyBuffer.filter(key => key !== removeKey);
+        keyBuffer.push(key); 
       }
 
       async function removeKeypressFromBuffer(event) {
         event.preventDefault();
-        if (keyBuffer.length > 1) {
-          const removeKey = event.key;
-          keyBuffer = keyBuffer.filter(key => key !== removeKey);
-        }
+        const removeKey = event.key;
+        keyBuffer = keyBuffer.filter(key => key !== removeKey);
       }
+
 
       document.addEventListener("keydown", addKeypressToBuffer);
       document.addEventListener("keyup", removeKeypressFromBuffer);
+      startButton.addEventListener('click', start);
 
-      generateFood();
-      gameLoop = setInterval(update, 150); // Game loop
+      function start() {
+        snakeLength = 1;
+        snake = [{ x: 10, y: 10 }];
+        sortedTailPositions.add(snake[0]);
+        tickRate = 250;
+        generateFood();
+        gameLoop = setInterval(update, tickRate); // Game loop
+        startButton.removeEventListener('click', start);
+      }
+
     </script>
   </body>
 </html>
